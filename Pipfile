@@ -12,6 +12,7 @@ markdown = "*"
 django-filter = "*"
 pillow = "*"
 djangorestframework-simplejwt = "*"
+django-taggit = "*"
 
 [dev-packages]
 

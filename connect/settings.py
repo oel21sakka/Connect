@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'account',
     'rest_framework_simplejwt',
+    'post',
+    'taggit',
 ]
 
 MIDDLEWARE = [
