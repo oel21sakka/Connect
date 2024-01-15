@@ -4,6 +4,7 @@ from .models import Post, Comment
 from taggit.serializers import TaggitSerializer, TagListSerializerField
 from django.utils.text import slugify
 from django.db.models import Count,Q
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
 class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
@@ -83,3 +84,19 @@ class SinglePostSerializer(PostSerializer):
         similar_posts = Post.objects.filter(tags__in=obj.tags.all()).exclude(id=obj.id)
         similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags','-publish_date')[:3]
         return PostSerializer(similar_posts, many=True).data
+
+class SearchSerializer(serializers.Serializer):
+    query = serializers.CharField()
+    
+    def search(self):
+        search_vector = SearchVector('title', weight='A', config='simple') + SearchVector('body', weight='B', config='simple')
+        search_query = SearchQuery(self.validated_data['query'], config='simple')
+        
+        results = (
+            Post.objects
+            .annotate(search=search_vector, rank=SearchRank(search_vector, search_query))
+            .filter(search=search_query)
+            .order_by('-rank')
+        )
+        
+        return PostSerializer(results, many=True).data

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'blog',
     'taggit',
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [

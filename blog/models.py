@@ -19,6 +19,7 @@ class Post(models.Model):
         indexes = [
             models.Index(fields=['slug']),
             models.Index(fields=['body']),
+            models.Index(fields=['title']),
         ]
         ordering = ['-publish_date']
     

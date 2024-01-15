@@ -1,8 +1,10 @@
-from rest_framework import generics
+from rest_framework import generics, status
 from .models import Post, Comment
-from .serializers import PostSerializer, SinglePostSerializer, CommentSerializer, SingleCommentSerializer
+from .serializers import PostSerializer, SinglePostSerializer, CommentSerializer, SingleCommentSerializer, SearchSerializer
 from .permissions import PostPermission, CommentPermission
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 class PostView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -33,3 +35,11 @@ class SingleCommentView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = SingleCommentSerializer
     permission_classes = [CommentPermission]
+
+@api_view(['GET'])
+def search_view(request):
+    serializer=SearchSerializer(data=request.query_params)
+    if serializer.is_valid():
+        return Response(serializer.search(), status=status.HTTP_200_OK)
+    else:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
