@@ -15,6 +15,7 @@ Before you dive in, make sure you have the following requirements in place:
 - [Python](https://www.python.org/)
 - [Pipenv](https://pipenv.pypa.io/)
 - [Postgresql](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
 
 Install the necessary Python packages within a virtual environment using the following command:
 
@@ -38,6 +39,7 @@ grant all privileges on database mydb to myuser;
 DEBUG=on
 SECRET_KEY='django-project-secret-key'
 DATABASE_URL=psql://myuser:mypass@localhost:5432/mydb
+REDIS_URL=redis://127.0.0.1:6379
 ```
 
 - Apply migrations to the database:
@@ -45,6 +47,12 @@ DATABASE_URL=psql://myuser:mypass@localhost:5432/mydb
 ```bash
 python3 manage.py makemigrations
 python3 manage.py migrate
+```
+
+- Run Redis Server:
+
+```bash
+redis-server
 ```
 
 ## Introduction
@@ -62,6 +70,12 @@ python3 manage.py migrate
 ```bash
 python3 manage.py makemigrations
 python3 manage.py migrate
+```
+
+- Ensure that Redis server is running:
+
+```bash
+redis-server
 ```
 
 - Start by running:

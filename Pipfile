@@ -13,6 +13,7 @@ django-filter = "*"
 pillow = "*"
 djangorestframework-simplejwt = "*"
 django-taggit = "*"
+redis = "*"
 
 [dev-packages]
 

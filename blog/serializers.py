@@ -5,11 +5,13 @@ from taggit.serializers import TaggitSerializer, TagListSerializerField
 from django.utils.text import slugify
 from django.db.models import Count,Q
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.core.cache import cache
 
 class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     tags = TagListSerializerField(required=False)
-
+    views = serializers.SerializerMethodField()
+    
     class Meta:
         model = Post
         fields = '__all__'
@@ -24,13 +26,15 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
     def get_url(self,obj):
         return obj.get_absolute_url()
     
+    def get_views(self,obj):
+        return cache.get_or_set(obj.get_views_cach_key(),0)
+    
     def set_slug(self, validated_data, id=None):
         if 'title' in validated_data:
             validated_data['slug'] = slugify(validated_data['title'], allow_unicode=True)
         # Check for uniqueness of slug and publish_date
         if Post.objects.filter(Q(publish_date=date.today()) & Q(slug=validated_data['slug'])).exclude(id=id).exists():
             raise serializers.ValidationError('A post with the same title and publish date already exists.')
-
     
     def create(self, validated_data):
         self.set_slug(validated_data)

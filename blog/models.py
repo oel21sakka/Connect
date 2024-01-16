@@ -25,6 +25,9 @@ class Post(models.Model):
     
     def get_absolute_url(self):
         return reverse('SinglePostView', kwargs={'slug':self.slug, 'publish_date':self.publish_date.strftime('%Y-%m-%d')})
+    
+    def get_views_cach_key(self):
+        return f'post:{self.id}:views'
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
