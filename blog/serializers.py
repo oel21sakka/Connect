@@ -27,7 +27,7 @@ class PostSerializer(TaggitSerializer, serializers.ModelSerializer):
         return obj.get_absolute_url()
     
     def get_views(self,obj):
-        return cache.get_or_set(obj.get_views_cach_key(),0)
+        return cache.get(obj.get_views_cach_key(),0)
     
     def set_slug(self, validated_data, id=None):
         if 'title' in validated_data:

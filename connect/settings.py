@@ -159,5 +159,10 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": env('REDIS_URL'),
+        "TIMEOUT": 0,
     }
 }
+
+#redis client
+from redis import Redis
+REDIS_CLIENT = Redis.from_url(env('REDIS_URL'))

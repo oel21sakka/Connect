@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.core.cache import cache
+from django.conf import settings
 
 class PostView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -26,8 +27,9 @@ class SinglePostView(generics.RetrieveUpdateDestroyAPIView):
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
         if response.status_code == status.HTTP_200_OK:
-            post_id = self.get_object().id
-            cache.incr(self.get_object().get_views_cach_key())
+            views = cache.get_or_set(self.get_object().get_views_cach_key(),0)
+            cache.set(self.get_object().get_views_cach_key(),views+1)
+            settings.REDIS_CLIENT.zincrby('post_ranking', 1, self.get_object().id)
         return response
 
 
@@ -51,3 +53,12 @@ def search_view(request):
         return Response(serializer.search(), status=status.HTTP_200_OK)
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def most_viewed_view(request):
+    post_ranking = settings.REDIS_CLIENT.zrange('post_ranking', 0, -1, desc=True)[:10]
+    post_ranking_ids = [int(id) for id in post_ranking]
+    most_viewed_posts = list(Post.objects.filter(id__in=post_ranking_ids))
+    serializer = PostSerializer(most_viewed_posts, many=True)
+    ordered_posts = sorted(serializer.data, key=lambda x: post_ranking_ids.index(x['id']))
+    return Response(ordered_posts, status=status.HTTP_200_OK)
