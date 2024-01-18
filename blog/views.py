@@ -2,11 +2,12 @@ from rest_framework import generics, status
 from .models import Post, Comment
 from .serializers import PostSerializer, SinglePostSerializer, CommentSerializer, SingleCommentSerializer, SearchSerializer
 from .permissions import PostPermission, CommentPermission
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.core.cache import cache
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 class PostView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -62,3 +63,15 @@ def most_viewed_view(request):
     serializer = PostSerializer(most_viewed_posts, many=True)
     ordered_posts = sorted(serializer.data, key=lambda x: post_ranking_ids.index(x['id']))
     return Response(ordered_posts, status=status.HTTP_200_OK)
+
+@api_view(['GET','DELETE'])
+@permission_classes([IsAuthenticated])
+def like_post_view(request):
+    print(request.query_params)
+    post = get_object_or_404(Post, id=request.query_params['post_id'])
+    if request.method=='GET':
+        post.users_like.add(request.user)
+        return Response('post liked', status=status.HTTP_200_OK)
+    else:
+        post.users_like.remove(request.user)
+        return Response('post unliked', status=status.HTTP_200_OK)

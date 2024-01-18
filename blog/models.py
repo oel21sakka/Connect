@@ -11,6 +11,7 @@ class Post(models.Model):
     update_date = models.DateTimeField(auto_now=True)
     slug = models.SlugField()
     tags = TaggableManager(blank=True)
+    users_like = models.ManyToManyField(User,related_name='posts_liked',blank=True)
     
     class Meta:
         constraints = [
