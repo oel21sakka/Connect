@@ -1,6 +1,6 @@
 from rest_framework import generics, status
 from .models import Post, Comment
-from .serializers import PostSerializer, SinglePostSerializer, CommentSerializer, SingleCommentSerializer, SearchSerializer
+from .serializers import PostSerializer, SinglePostSerializer, CommentSerializer, SingleCommentSerializer
 from .permissions import PostPermission, CommentPermission
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from django.core.cache import cache
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
 class PostView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -31,6 +32,9 @@ class SinglePostView(generics.RetrieveUpdateDestroyAPIView):
             views = cache.get_or_set(self.get_object().get_views_cach_key(),0)
             cache.set(self.get_object().get_views_cach_key(),views+1)
             settings.REDIS_CLIENT.zincrby('post_ranking', 1, self.get_object().id)
+        #add a bool if user likes the post
+        if request.user!=None:
+            response.data['Liked'] = request.user.id in self.get_object().users_like.all()
         return response
 
 
@@ -49,11 +53,18 @@ class SingleCommentView(generics.RetrieveUpdateDestroyAPIView):
 
 @api_view(['GET'])
 def search_view(request):
-    serializer=SearchSerializer(data=request.query_params)
-    if serializer.is_valid():
-        return Response(serializer.search(), status=status.HTTP_200_OK)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    if 'query' not in request.query_params:
+        return Response({'error': 'query parameter cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+    query = request.query_params['query']
+    search_vector = SearchVector('title', weight='A', config='simple') + SearchVector('body', weight='B', config='simple')
+    search_query = SearchQuery(query, config='simple')
+    results = (
+        Post.objects
+        .annotate(search=search_vector, rank=SearchRank(search_vector, search_query))
+        .filter(search=search_query)
+        .order_by('-rank')
+    )
+    return Response(PostSerializer(results, many=True).data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def most_viewed_view(request):
@@ -67,7 +78,8 @@ def most_viewed_view(request):
 @api_view(['GET','DELETE'])
 @permission_classes([IsAuthenticated])
 def like_post_view(request):
-    print(request.query_params)
+    if 'post_id' not in request.query_params:
+        return Response({'error': 'post_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
     post = get_object_or_404(Post, id=request.query_params['post_id'])
     if request.method=='GET':
         post.users_like.add(request.user)

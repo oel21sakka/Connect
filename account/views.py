@@ -9,7 +9,6 @@ class UserView(generics.ListCreateAPIView):
     
 class SingleUserView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [EditDestroyPersonalAccount]
-    
     serializer_class = UserSerializer
     
     def get_queryset(self, *args, **kwargs):
