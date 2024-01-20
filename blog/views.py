@@ -8,12 +8,17 @@ from rest_framework.response import Response
 from django.core.cache import cache
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 class PostView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['user']
+    search_fields = ['@title', '@body']
+    ordering_fields = ['publish_date','update_date']
+    
     permission_classes = [IsAuthenticatedOrReadOnly]
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -50,21 +55,6 @@ class SingleCommentView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = SingleCommentSerializer
     permission_classes = [CommentPermission]
-
-@api_view(['GET'])
-def search_view(request):
-    if 'query' not in request.query_params:
-        return Response({'error': 'query parameter cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
-    query = request.query_params['query']
-    search_vector = SearchVector('title', weight='A', config='simple') + SearchVector('body', weight='B', config='simple')
-    search_query = SearchQuery(query, config='simple')
-    results = (
-        Post.objects
-        .annotate(search=search_vector, rank=SearchRank(search_vector, search_query))
-        .filter(search=search_query)
-        .order_by('-rank')
-    )
-    return Response(PostSerializer(results, many=True).data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def most_viewed_view(request):
