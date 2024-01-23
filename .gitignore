@@ -3,4 +3,6 @@ migrations
 venv
 .env
 media
+dump.rdb
 commit_message.txt
+further_work.txt
