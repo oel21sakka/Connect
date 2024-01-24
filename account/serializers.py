@@ -3,9 +3,23 @@ from django.contrib.auth.models import User
 from .models import Profile
 from rest_framework.validators import UniqueValidator
 
-class ProfileSerializer(serializers.Serializer):
-    avatar = serializers.ImageField(required = False)
-    bio = serializers.CharField(required=False)
+class ProfileSerializer(serializers.ModelSerializer):
+    following_count = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Profile
+        exclude = ['following','user']
+        extra_kwargs = {
+            'avatar':{'required':False},
+            'bio':{'required':False},
+        }
+    
+    def get_following_count(self,obj):
+        return obj.following.count()
+    
+    def get_followers_count(self,obj):
+        return obj.followers.count()
 
 class UserSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
@@ -30,8 +44,13 @@ class UserSerializer(serializers.Serializer):
         User.objects.filter(id=instance.id).update(**user_data)
         return User.objects.get(id=instance.id)
 
+class RegisterProfileSerializer(serializers.Serializer):
+    avatar = serializers.ImageField(required = False)
+    bio = serializers.CharField(required=False)
+
 class RegisterUserSerializer(UserSerializer):
     password = serializers.CharField(min_length=8, write_only=True)
+    profile = RegisterProfileSerializer()
     
     def create(self,validated_data):
         user_data=validated_data

@@ -49,9 +49,9 @@ class BasePostSerializer(TaggitSerializer, serializers.ModelSerializer):
         if 'title' in validated_data:
             validated_data['slug'] = slugify(validated_data['title'], allow_unicode=True)
         # Check for uniqueness of slug and publish_date
-        if Post.objects.filter(Q(publish_date=date.today()) & Q(slug=validated_data['slug'])).exclude(id=id).exists():
+        if Post.objects.filter(Q(publish_date__date=date.today()) & Q(slug=validated_data['slug'])).exclude(id=id).exists():
             raise serializers.ValidationError('A post with the same title and publish date already exists.')
-    
+
 
 class PostSerializer(BasePostSerializer):
 
