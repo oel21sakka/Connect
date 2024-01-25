@@ -37,9 +37,6 @@ class SinglePostView(generics.RetrieveUpdateDestroyAPIView):
             views = cache.get_or_set(self.get_object().get_views_cach_key(),0)
             cache.set(self.get_object().get_views_cach_key(),views+1)
             settings.REDIS_CLIENT.zincrby('post_ranking', 1, self.get_object().id)
-        #add a bool if user likes the post
-        if request.user!=None:
-            response.data['Liked'] = request.user.id in self.get_object().users_like.all()
         return response
 
 
@@ -77,3 +74,10 @@ def like_post_view(request):
     else:
         post.users_like.remove(request.user)
         return Response('post unliked', status=status.HTTP_200_OK)
+
+class FeedView(generics.ListAPIView):
+    serializer_class=PostSerializer
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        queryset = Post.objects.filter(user_id__in=self.request.user.profile.following.values_list('user_id'))
+        return queryset

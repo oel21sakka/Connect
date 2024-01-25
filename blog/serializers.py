@@ -74,6 +74,7 @@ class PostSerializer(BasePostSerializer):
 class SinglePostSerializer(BasePostSerializer):
     similar_posts = serializers.SerializerMethodField()
     comments = CommentSerializer(many=True, read_only=True)
+    liked = serializers.SerializerMethodField()
     
     class Meta():
         model = Post
@@ -98,3 +99,6 @@ class SinglePostSerializer(BasePostSerializer):
         similar_posts = Post.objects.filter(tags__in=obj.tags.all()).exclude(id=obj.id)
         similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags','-publish_date')[:3]
         return PostSerializer(similar_posts, many=True).data
+
+    def get_liked(self,obj):
+        return self.context['request'].user in obj.users_like.all()

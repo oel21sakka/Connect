@@ -32,6 +32,7 @@ class UserSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     profile = ProfileSerializer()
+    followed = serializers.SerializerMethodField()
 
     class Meta:
         fields = '__all__'
@@ -43,6 +44,9 @@ class UserSerializer(serializers.Serializer):
             Profile.objects.filter(user=instance.id).update(**profile_data)
         User.objects.filter(id=instance.id).update(**user_data)
         return User.objects.get(id=instance.id)
+    
+    def get_followed(self,obj):
+        return self.context['request'].user.profile in obj.profile.followers.all()
 
 class RegisterProfileSerializer(serializers.Serializer):
     avatar = serializers.ImageField(required = False)
